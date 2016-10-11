@@ -117,7 +117,8 @@ public class NetworkIntensiveTopology {
         builder.setBolt("bolt1", new ExclamationBolt(), parallel)
             .shuffleGrouping("spout");
         builder.setBolt("bolt2", new ExclamationBolt(), parallel)
-            .allGrouping("bolt1");
+            .shuffleGrouping("bolt1");
+            // .allGrouping("bolt1");
 
         Config conf = new Config();
 
