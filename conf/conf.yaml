@@ -1,0 +1,17 @@
+kafka.brokers:
+    - "localhost"
+
+zookeeper.servers:
+    - "localhost"
+
+kafka.port: 9092
+zookeeper.port: 2181
+redis.host: "localhost"
+kafka.topic: "comm-test"
+kafka.partitions: 1
+
+process.cores: 2
+
+storm.workers: 1
+storm.ackers: 1
+
