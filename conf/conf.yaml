@@ -7,7 +7,7 @@ zookeeper.servers:
 kafka.port: 9092
 zookeeper.port: 2181
 redis.host: "localhost"
-kafka.topic: "comm-test"
+kafka.topic: "test-event"
 kafka.partitions: 1
 
 process.cores: 2
@@ -15,3 +15,5 @@ process.cores: 2
 storm.workers: 1
 storm.ackers: 1
 
+rollingsort.emitfreq: 10
+rollingsort.chunksize: 2000000
