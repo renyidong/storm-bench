@@ -1,0 +1,29 @@
+#!/bin/bash
+
+JAR=./target/storm-bench-0.1-jar-with-dependencies.jar
+CONF=./conf/conf.yaml
+
+run_cmd() {
+    local cmd=$1
+    echo $cmd
+    eval $cmd
+}
+
+case "$1" in
+    sort)
+        echo "Submitting rollingsort"
+        run_cmd "storm jar ${JAR} RollingSort rollingsort -conf ${CONF}"
+        ;;
+    sol)
+        echo "Submitting sol"
+        run_cmd "storm jar ${JAR} SOL sol -conf ${CONF}"
+        ;;
+    wc)
+        echo "Submitting wordcount"
+        run_cmd "storm jar ${JAR} WordCount wordcount -conf ${CONF}"
+        ;;
+    *)
+        echo "Usage: $0 {sort|sol|wc}"
+        exit 1
+esac
+

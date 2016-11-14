@@ -1,0 +1,26 @@
+#!/bin/bash
+
+run_cmd() {
+    local cmd=$1
+    echo $cmd
+    eval $cmd
+}
+
+case "$1" in
+    sort)
+        echo "Submitting rollingsort"
+        run_cmd "storm kill -w 0 rollingsort || true"
+        ;;
+    sol)
+        echo "Submitting sol"
+        run_cmd "storm kill -w 0 sol || true"
+        ;;
+    wc)
+        echo "Submitting wordcount"
+        run_cmd "storm kill -w 0 wordcount || true"
+        ;;
+    *)
+        echo "Usage: $0 {sort|sol|wc}"
+        exit 1
+esac
+

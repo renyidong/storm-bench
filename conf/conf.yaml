@@ -17,3 +17,5 @@ storm.ackers: 1
 
 rollingsort.emitfreq: 10
 rollingsort.chunksize: 2000000
+
+sol.topology_level: 3

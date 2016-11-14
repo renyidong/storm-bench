@@ -5,6 +5,7 @@ import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.topology.base.BaseRichBolt;
@@ -36,6 +37,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
@@ -44,47 +46,37 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 
+/**
+ * forked from https://github.com/manuzhang/storm-benchmark/blob/master/src/main/java/storm/benchmark/benchmarks/SOL.java
+ */
 
-public class SpeedOfLight {
-    private static final Logger log = LoggerFactory.getLogger(SpeedOfLight.class);
 
-    public static class ExclamationBolt extends BaseRichBolt {
-        OutputCollector _collector;
+public class SOL {
+    private static final Logger log = LoggerFactory.getLogger(SOL.class);
 
-        @Override
-        public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
-            _collector = collector;
+    public static final String SPOUT_ID = "spout";
+    public static final String BOLT_ID = "bolt";
+
+    public static class ConstBolt extends BaseBasicBolt {
+        private static final long serialVersionUID = -5313598399155365865L;
+        public static final String FIELDS = "message";
+
+        public ConstBolt() {
         }
 
         @Override
-        public void execute(Tuple tuple) {
-            _collector.emit(tuple, new Values(tuple.getString(0) + "!!!"));
-            _collector.ack(tuple);
+        public void prepare(Map conf, TopologyContext context) {
         }
 
         @Override
-        public void cleanup() {
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            collector.emit(new Values(tuple.getValue(0)));
         }
 
         @Override
         public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields("word"));
+            declarer.declare(new Fields(FIELDS));
         }
-    }
-
-    private static String joinHosts(List<String> hosts, String port) {
-        String joined = null;
-        for(String s : hosts) {
-            if(joined == null) {
-                joined = "";
-            }
-            else {
-                joined += ",";
-            }
-
-            joined += s + ":" + port;
-        }
-        return joined;
     }
 
     public static void main(String[] args) throws Exception {
@@ -104,20 +96,23 @@ public class SpeedOfLight {
         int workers = ((Number)commonConfig.get("storm.workers")).intValue();
         int ackers = ((Number)commonConfig.get("storm.ackers")).intValue();
         int cores = ((Number)commonConfig.get("process.cores")).intValue();
-        int parallel = Math.max(1, cores/3);
+        int numLevels = ((Number)commonConfig.get("sol.topology_level")).intValue();
+        int parallel = Math.max(1, cores/(1 + numLevels));
 
         ZkHosts hosts = new ZkHosts(zkServerHosts);
 
         SpoutConfig spoutConfig = new SpoutConfig(hosts, kafkaTopic, "/" + kafkaTopic, UUID.randomUUID().toString());
         spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
         KafkaSpout kafkaSpout = new KafkaSpout(spoutConfig);
-
-        builder.setSpout("spout", kafkaSpout, kafkaPartitions);
-        builder.setBolt("bolt1", new ExclamationBolt(), parallel)
-            .shuffleGrouping("spout");
-        builder.setBolt("bolt2", new ExclamationBolt(), parallel)
-            .shuffleGrouping("bolt1");
-            // .allGrouping("bolt1");
+        
+        // numLevel: total number of layers including one spout and bolts
+        builder.setSpout(SPOUT_ID, kafkaSpout, parallel);
+        builder.setBolt(BOLT_ID + 1, new ConstBolt(), parallel)
+            .shuffleGrouping(SPOUT_ID);
+        for (int levelNum = 2; levelNum <= numLevels - 1; levelNum++) {
+            builder.setBolt(BOLT_ID + levelNum, new ConstBolt(), parallel)
+                .shuffleGrouping(BOLT_ID + (levelNum - 1));
+        }
 
         Config conf = new Config();
 
