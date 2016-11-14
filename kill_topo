@@ -8,15 +8,15 @@ run_cmd() {
 
 case "$1" in
     sort)
-        echo "Submitting rollingsort"
+        echo "Killing rollingsort"
         run_cmd "storm kill -w 0 rollingsort || true"
         ;;
     sol)
-        echo "Submitting sol"
+        echo "Killing sol"
         run_cmd "storm kill -w 0 sol || true"
         ;;
     wc)
-        echo "Submitting wordcount"
+        echo "Killing wordcount"
         run_cmd "storm kill -w 0 wordcount || true"
         ;;
     *)
