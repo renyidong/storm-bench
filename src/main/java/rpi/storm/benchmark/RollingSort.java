@@ -14,7 +14,6 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.topology.base.BaseBasicBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
@@ -27,20 +26,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import yahoo.benchmark.common.Utils;
-import intel.storm.benchmark.lib.operation.WordSplit;
+import intel.storm.benchmark.util.TupleHelpers;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.List;
+import java.io.Serializable;
+import java.util.*;
 
 
-public class WordCount {
-    private static final Logger log = LoggerFactory.getLogger(WordCount.class);
+public class RollingSort {
+    private static final Logger log = LoggerFactory.getLogger(RollingSort.class);
 
     public static final String SPOUT_ID = "spout";
-    public static final String SPLIT_ID = "split";
-    public static final String COUNT_ID = "count";
+    public static final String SORT_BOLT_ID ="sort";
 
     public static void main(String[] args) throws Exception {
         TopologyBuilder builder = new TopologyBuilder();
@@ -59,19 +55,19 @@ public class WordCount {
         int workers = ((Number)commonConfig.get("storm.workers")).intValue();
         int ackers = ((Number)commonConfig.get("storm.ackers")).intValue();
         int cores = ((Number)commonConfig.get("process.cores")).intValue();
+        int emitFreq = ((Number)commonConfig.get("rollingsort.emit_freq")).intValue();
+        int chunkSize = ((Number)commonConfig.get("rollingsort.chunk_size")).intValue();
 
         ZkHosts hosts = new ZkHosts(zkServerHosts);
 
         SpoutConfig spoutConfig = new SpoutConfig(hosts, kafkaTopic, "/" + kafkaTopic, UUID.randomUUID().toString());
         spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
         KafkaSpout spout = new KafkaSpout(spoutConfig);
-        
-        builder.setSpout(SPOUT_ID, spout, parallel);
-        builder.setBolt(SPLIT_ID, new SplitSentence(), parallel)
-            .localOrShuffleGrouping(SPOUT_ID);
-        builder.setBolt(COUNT_ID, new Count(), parallel)
-            .fieldsGrouping(SPLIT_ID, new Fields(SplitSentence.FIELDS));
 
+        builder.setSpout(SPOUT_ID, spout, parallel);
+        builder.setBolt(SORT_BOLT_ID, new SortBolt(emitFreq, chunkSize), parallel)
+            .localOrShuffleGrouping(SPOUT_ID);
+        
         Config conf = new Config();
 
         log.info("Topology started");
@@ -90,52 +86,97 @@ public class WordCount {
         }
     }
 
-    public static class SplitSentence extends BaseBasicBolt {
 
-        public static final String FIELDS = "word";
+    public static class SortBolt extends BaseBasicBolt {
 
-        @Override
-        public void prepare(Map stormConf, TopologyContext context) {
+        public static final String EMIT_FREQ = "emit.frequency";
+        public static final int DEFAULT_EMIT_FREQ = 60;  // 60s
+        public static final String CHUNK_SIZE = "chunk.size";
+        public static final int DEFAULT_CHUNK_SIZE = 100;
+        public static final String FIELDS = "sorted_data";
+
+        private final int emitFrequencyInSeconds;
+        private final int chunkSize;
+        private int index = 0;
+        private MutableComparable[] data;
+
+
+        public SortBolt(int emitFrequencyInSeconds, int chunkSize) {
+            this.emitFrequencyInSeconds = emitFrequencyInSeconds;
+            this.chunkSize = chunkSize;
         }
 
         @Override
-        public void execute(Tuple input, BasicOutputCollector collector) {
-            for (String word : WordSplit.splitSentence(input.getString(0))) {
-                collector.emit(new Values(word));
+        public void prepare(Map stormConf, TopologyContext context) {
+            this.data = new MutableComparable[this.chunkSize];
+            for (int i = 0; i < this.chunkSize; i++) {
+                this.data[i] = new MutableComparable();
             }
         }
 
         @Override
-        public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields(FIELDS));
+        public void execute(Tuple tuple, BasicOutputCollector basicOutputCollector) {
+            if (TupleHelpers.isTickTuple(tuple)) {
+                Arrays.sort(data);
+                basicOutputCollector.emit(new Values(data));
+                log.info("index = " + index);
+            } else {
+                Object obj = tuple.getValue(0);
+                if (obj instanceof Comparable) {
+                    data[index].set((Comparable) obj);
+                } else {
+                    throw new RuntimeException("tuple value is not a Comparable");
+                }
+                index = (index + 1 == chunkSize) ? 0 : index + 1;
+            }
         }
 
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+            outputFieldsDeclarer.declare(new Fields(FIELDS));
+        }
+
+        @Override
+        public Map<String, Object> getComponentConfiguration() {
+            Map<String, Object> conf = new HashMap<String, Object>();
+            conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
+            return conf;
+        }
     }
 
-    public static class Count extends BaseBasicBolt {
-        public static final String FIELDS_WORD = "word";
-        public static final String FIELDS_COUNT = "count";
+    private static class MutableComparable implements Comparable, Serializable {
+        private static final long serialVersionUID = -5417151427431486637L;
+        private Comparable c = null;
 
-        Map<String, Integer> counts = new HashMap<String, Integer>();
+        public MutableComparable() {
 
-        @Override
-        public void prepare(Map stormConf, TopologyContext context) {
+        }
+
+        public MutableComparable(Comparable c) {
+            this.c = c;
+        }
+
+        public void set(Comparable c) {
+            this.c = c;
+        }
+
+        public Comparable get() {
+            return c;
         }
 
         @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            String word = tuple.getString(0);
-            Integer count = counts.get(word);
-            if (count == null)
-                count = 0;
-            count++;
-            counts.put(word, count);
-            collector.emit(new Values(word, count));
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields(FIELDS_WORD, FIELDS_COUNT));
+        public int compareTo(Object other) {
+            if (other == null) return 1;
+            Comparable oc = ((MutableComparable) other).get();
+            if (null == c && null == oc) {
+                return 0;
+            } else if (null == c) {
+                return -1;
+            } else if (null == oc) {
+                return 1;
+            } else {
+                return c.compareTo(oc);
+            }
         }
     }
 }

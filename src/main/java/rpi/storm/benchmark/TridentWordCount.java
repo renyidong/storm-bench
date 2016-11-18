@@ -6,6 +6,8 @@ import org.apache.storm.StormSubmitter;
 import org.apache.storm.kafka.KafkaSpout;
 import org.apache.storm.kafka.SpoutConfig;
 import org.apache.storm.kafka.StringScheme;
+import org.apache.storm.kafka.trident.TransactionalTridentKafkaSpout;
+import org.apache.storm.kafka.trident.TridentKafkaConfig;
 import org.apache.storm.kafka.ZkHosts;
 import org.apache.storm.spout.SchemeAsMultiScheme;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -14,8 +16,11 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.topology.base.BaseBasicBolt;
+import org.apache.storm.trident.TridentTopology;
+import org.apache.storm.trident.operation.builtin.Count;
+import org.apache.storm.trident.spout.IPartitionedTridentSpout;
+import org.apache.storm.trident.testing.MemoryMapState;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
@@ -35,16 +40,14 @@ import java.util.UUID;
 import java.util.List;
 
 
-public class WordCount {
-    private static final Logger log = LoggerFactory.getLogger(WordCount.class);
+public class TridentWordCount {
+    private static final Logger log = LoggerFactory.getLogger(TridentWordCount.class);
 
     public static final String SPOUT_ID = "spout";
     public static final String SPLIT_ID = "split";
     public static final String COUNT_ID = "count";
 
     public static void main(String[] args) throws Exception {
-        TopologyBuilder builder = new TopologyBuilder();
-
         Options opts = new Options();
         opts.addOption("conf", true, "Path to the config file.");
 
@@ -62,15 +65,19 @@ public class WordCount {
 
         ZkHosts hosts = new ZkHosts(zkServerHosts);
 
-        SpoutConfig spoutConfig = new SpoutConfig(hosts, kafkaTopic, "/" + kafkaTopic, UUID.randomUUID().toString());
-        spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
-        KafkaSpout spout = new KafkaSpout(spoutConfig);
-        
-        builder.setSpout(SPOUT_ID, spout, parallel);
-        builder.setBolt(SPLIT_ID, new SplitSentence(), parallel)
-            .localOrShuffleGrouping(SPOUT_ID);
-        builder.setBolt(COUNT_ID, new Count(), parallel)
-            .fieldsGrouping(SPLIT_ID, new Fields(SplitSentence.FIELDS));
+        TridentKafkaConfig tridentConf = new TridentKafkaConfig(hosts, 
+                                                                kafkaTopic, 
+                                                                UUID.randomUUID().toString());
+        tridentConf.scheme = new SchemeAsMultiScheme(new StringScheme());
+        IPartitionedTridentSpout spout = new TransactionalTridentKafkaSpout(tridentConf);
+
+        TridentTopology trident = new TridentTopology();
+        trident.newStream("wordcount", spout).name("sentence").parallelismHint(parallel).shuffle()
+            .each(new Fields(StringScheme.STRING_SCHEME_KEY), new WordSplit(), new Fields("word"))
+            .parallelismHint(parallel)
+            .groupBy(new Fields("word"))
+            .persistentAggregate(new MemoryMapState.Factory(), new Count(), new Fields("count"))
+            .parallelismHint(parallel);
 
         Config conf = new Config();
 
@@ -79,63 +86,14 @@ public class WordCount {
         if (args != null && args.length > 0) {
             conf.setNumWorkers(workers);
             conf.setNumAckers(ackers);
-            StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
+            StormSubmitter.submitTopologyWithProgressBar(args[0], conf, trident.build());
         }
         else {
             LocalCluster cluster = new LocalCluster();
-            cluster.submitTopology("test", conf, builder.createTopology());
+            cluster.submitTopology("test", conf, trident.build());
             org.apache.storm.utils.Utils.sleep(10000);
             cluster.killTopology("test");
             cluster.shutdown();
-        }
-    }
-
-    public static class SplitSentence extends BaseBasicBolt {
-
-        public static final String FIELDS = "word";
-
-        @Override
-        public void prepare(Map stormConf, TopologyContext context) {
-        }
-
-        @Override
-        public void execute(Tuple input, BasicOutputCollector collector) {
-            for (String word : WordSplit.splitSentence(input.getString(0))) {
-                collector.emit(new Values(word));
-            }
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields(FIELDS));
-        }
-
-    }
-
-    public static class Count extends BaseBasicBolt {
-        public static final String FIELDS_WORD = "word";
-        public static final String FIELDS_COUNT = "count";
-
-        Map<String, Integer> counts = new HashMap<String, Integer>();
-
-        @Override
-        public void prepare(Map stormConf, TopologyContext context) {
-        }
-
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            String word = tuple.getString(0);
-            Integer count = counts.get(word);
-            if (count == null)
-                count = 0;
-            count++;
-            counts.put(word, count);
-            collector.emit(new Values(word, count));
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields(FIELDS_WORD, FIELDS_COUNT));
         }
     }
 }

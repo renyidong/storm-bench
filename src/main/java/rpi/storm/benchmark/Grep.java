@@ -14,7 +14,6 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.topology.base.BaseBasicBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
@@ -27,20 +26,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import yahoo.benchmark.common.Utils;
-import intel.storm.benchmark.lib.operation.WordSplit;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
-public class WordCount {
-    private static final Logger log = LoggerFactory.getLogger(WordCount.class);
+public class Grep {
+    private static final Logger log = LoggerFactory.getLogger(Grep.class);
 
     public static final String SPOUT_ID = "spout";
-    public static final String SPLIT_ID = "split";
-    public static final String COUNT_ID = "count";
+    public static final String FM_ID = "find";
+    public static final String CM_ID = "count";
 
     public static void main(String[] args) throws Exception {
         TopologyBuilder builder = new TopologyBuilder();
@@ -59,18 +59,19 @@ public class WordCount {
         int workers = ((Number)commonConfig.get("storm.workers")).intValue();
         int ackers = ((Number)commonConfig.get("storm.ackers")).intValue();
         int cores = ((Number)commonConfig.get("process.cores")).intValue();
+        String ptnString = (String)commonConfig.get("grep.pattern_string");
 
         ZkHosts hosts = new ZkHosts(zkServerHosts);
 
         SpoutConfig spoutConfig = new SpoutConfig(hosts, kafkaTopic, "/" + kafkaTopic, UUID.randomUUID().toString());
         spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
-        KafkaSpout spout = new KafkaSpout(spoutConfig);
-        
-        builder.setSpout(SPOUT_ID, spout, parallel);
-        builder.setBolt(SPLIT_ID, new SplitSentence(), parallel)
+        KafkaSpout kafkaSpout = new KafkaSpout(spoutConfig);
+
+        builder.setSpout(SPOUT_ID, kafkaSpout, parallel);
+        builder.setBolt(FM_ID, new FindMatchingSentence(ptnString), parallel)
             .localOrShuffleGrouping(SPOUT_ID);
-        builder.setBolt(COUNT_ID, new Count(), parallel)
-            .fieldsGrouping(SPLIT_ID, new Fields(SplitSentence.FIELDS));
+        builder.setBolt(CM_ID, new CountMatchingSentence(), parallel)
+            .fieldsGrouping(FM_ID, new Fields(FindMatchingSentence.FIELDS));
 
         Config conf = new Config();
 
@@ -90,18 +91,28 @@ public class WordCount {
         }
     }
 
-    public static class SplitSentence extends BaseBasicBolt {
-
+    public static class FindMatchingSentence extends BaseBasicBolt {
         public static final String FIELDS = "word";
+        private Pattern pattern;
+        private Matcher matcher;
+        private final String ptnString;
+
+        public FindMatchingSentence(String ptnString) {
+            this.ptnString = ptnString;
+        }
 
         @Override
         public void prepare(Map stormConf, TopologyContext context) {
+            pattern = Pattern.compile(ptnString);
         }
 
         @Override
         public void execute(Tuple input, BasicOutputCollector collector) {
-            for (String word : WordSplit.splitSentence(input.getString(0))) {
-                collector.emit(new Values(word));
+            String sentence = input.getString(0);
+            log.debug(String.format("find pattern %s in sentence %s", ptnString, sentence));
+            matcher = pattern.matcher(input.getString(0));
+            if (matcher.find()) {
+                collector.emit(new Values(1));
             }
         }
 
@@ -109,33 +120,22 @@ public class WordCount {
         public void declareOutputFields(OutputFieldsDeclarer declarer) {
             declarer.declare(new Fields(FIELDS));
         }
-
     }
 
-    public static class Count extends BaseBasicBolt {
-        public static final String FIELDS_WORD = "word";
-        public static final String FIELDS_COUNT = "count";
-
-        Map<String, Integer> counts = new HashMap<String, Integer>();
+    public static class CountMatchingSentence extends BaseBasicBolt {
+        public static final String FIELDS = "count";
+        private int count = 0;
 
         @Override
-        public void prepare(Map stormConf, TopologyContext context) {
-        }
-
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            String word = tuple.getString(0);
-            Integer count = counts.get(word);
-            if (count == null)
-                count = 0;
-            count++;
-            counts.put(word, count);
-            collector.emit(new Values(word, count));
+        public void execute(Tuple input, BasicOutputCollector collector) {
+            if (input.getInteger(0).equals(1)) {
+                collector.emit(new Values(count++));
+            }
         }
 
         @Override
         public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields(FIELDS_WORD, FIELDS_COUNT));
+            declarer.declare(new Fields(FIELDS));
         }
     }
 }

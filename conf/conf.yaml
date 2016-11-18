@@ -15,7 +15,11 @@ process.cores: 2
 storm.workers: 1
 storm.ackers: 1
 
-rollingsort.emitfreq: 10
-rollingsort.chunksize: 2000000
-
+rollingsort.emit_freq: 60
+rollingsort.chunk_size: 2000000
+rollingcount.window_length: 300
+rollingcount.emit_freq: 60
 sol.topology_level: 3
+grep.pattern_string: string
+uniquevisitor.window_length: 9
+uniquevisitor.emit_freq: 3
