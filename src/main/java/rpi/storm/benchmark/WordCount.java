@@ -131,6 +131,7 @@ public class WordCount {
             count++;
             counts.put(word, count);
             collector.emit(new Values(word, count));
+            log.debug(word + ": " + count);
         }
 
         @Override

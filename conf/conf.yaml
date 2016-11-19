@@ -17,9 +17,9 @@ storm.ackers: 1
 
 rollingsort.emit_freq: 60
 rollingsort.chunk_size: 2000000
-rollingcount.window_length: 300
-rollingcount.emit_freq: 60
+rollingcount.window_length: 60
+rollingcount.emit_freq: 10
 sol.topology_level: 3
-grep.pattern_string: string
-uniquevisitor.window_length: 9
-uniquevisitor.emit_freq: 3
+grep.pattern_string: Tom
+uniquevisitor.window_length: 60
+uniquevisitor.emit_freq: 10

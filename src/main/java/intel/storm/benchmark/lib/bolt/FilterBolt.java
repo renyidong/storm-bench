@@ -24,8 +24,12 @@ import org.apache.storm.topology.base.BaseBasicBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FilterBolt<T> extends BaseBasicBolt {
+  private static final Logger log = LoggerFactory.getLogger(FilterBolt.class);
+
   private static final long serialVersionUID = -4957635695743420459L;
   public static final String FIELDS = "filtered";
   private final T toFilter;
@@ -37,6 +41,7 @@ public class FilterBolt<T> extends BaseBasicBolt {
   @Override
   public void execute(Tuple input, BasicOutputCollector collector) {
     if (!filter(input, toFilter)) {
+      log.debug((String)input.getValue(1));
       collector.emit(new Values(input.getValue(1)));
     }
   }

@@ -66,7 +66,7 @@ public class DataClean {
         builder.setSpout(SPOUT_ID, kafkaSpout, parallel);
         builder.setBolt(VIEW_ID, new PageViewBolt(Item.STATUS, Item.ALL), parallel)
             .localOrShuffleGrouping(SPOUT_ID);
-        builder.setBolt(FILTER_ID, new FilterBolt<Integer>(404), parallel)
+        builder.setBolt(FILTER_ID, new FilterBolt<Integer>(200), parallel)
             .fieldsGrouping(VIEW_ID, new Fields(Item.STATUS.toString()));
 
         Config conf = new Config();

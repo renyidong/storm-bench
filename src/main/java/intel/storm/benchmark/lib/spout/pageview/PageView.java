@@ -46,7 +46,7 @@ public class PageView {
   }
 
   public static PageView fromString(String pv) {
-    LOG.debug("get string '" + pv + "'");
+    // LOG.debug("get string '" + pv + "'");
     String[] parts = pv.split("\t");
     if (parts.length < 4) {
       return null;

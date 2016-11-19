@@ -1,7 +1,8 @@
 #!/bin/bash
 
-JAR=./target/storm-bench-0.1-jar-with-dependencies.jar
-CONF=./conf/conf.yaml
+JAR="./target/storm-bench-0.1-jar-with-dependencies.jar"
+CONF="./conf/conf.yaml"
+PACKAGE="rpi.storm.benchmark"
 
 run_cmd() {
     local cmd=$1
@@ -10,20 +11,54 @@ run_cmd() {
 }
 
 case "$1" in
-    sort)
+    rsort)
         echo "Submitting rollingsort"
-        run_cmd "storm jar ${JAR} RollingSort rollingsort -conf ${CONF}"
+        class=RollingSort
+        topo=rollingsort
         ;;
     sol)
         echo "Submitting sol"
-        run_cmd "storm jar ${JAR} SOL sol -conf ${CONF}"
+        class=SOL
+        topo=sol
         ;;
     wc)
         echo "Submitting wordcount"
-        run_cmd "storm jar ${JAR} WordCount wordcount -conf ${CONF}"
+        class=WordCount
+        topo=wordcount
+        ;;
+    clean)
+        echo "Submitting dataclean"
+        class=DataClean
+        topo=dataclean
+        ;;
+    grep)
+        echo "Submitting grep"
+        class=Grep
+        topo=grep
+        ;;
+    pv)
+        echo "Submitting pageviewcount"        
+        class=PageViewCount
+        topo=pageviewcount
+        ;;
+    visitor)
+        echo "Submitting uniquevisitor"
+        class=UniqueVisitor
+        topo=uniquevisitorp
+        ;;
+    trident)
+        echo "Submitting trident"
+        class=TridentWordCount
+        topo=tridentwordcount
+        ;;
+    rcount)
+        echo "Submitting rollingcount"
+        class=RollingCount
+        topo=rollingcount
         ;;
     *)
-        echo "Usage: $0 {sort|sol|wc}"
+        echo "Usage: $0 {rsort|sol|wc|clean|grep|pv|visitor|trident|rcount}"
         exit 1
 esac
 
+run_cmd "storm jar ${JAR} ${PACKAGE}.${class} ${topo} -conf ${CONF}"

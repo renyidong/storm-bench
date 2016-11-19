@@ -109,9 +109,9 @@ public class Grep {
         @Override
         public void execute(Tuple input, BasicOutputCollector collector) {
             String sentence = input.getString(0);
-            log.debug(String.format("find pattern %s in sentence %s", ptnString, sentence));
             matcher = pattern.matcher(input.getString(0));
             if (matcher.find()) {
+                log.debug(String.format("find pattern %s in sentence %s", ptnString, sentence));
                 collector.emit(new Values(1));
             }
         }
@@ -130,6 +130,7 @@ public class Grep {
         public void execute(Tuple input, BasicOutputCollector collector) {
             if (input.getInteger(0).equals(1)) {
                 collector.emit(new Values(count++));
+                log.debug("count: " + count);
             }
         }
 

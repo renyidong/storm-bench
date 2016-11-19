@@ -23,6 +23,8 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import intel.storm.benchmark.lib.reducer.SetReducer;
 import intel.storm.benchmark.tools.SlidingWindow;
 
@@ -32,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class UniqueVisitorBolt extends RollingBolt {
+  private static final Logger log = LoggerFactory.getLogger(UniqueVisitorBolt.class);
 
   private static final long serialVersionUID = -6518481724698629167L;
   public static final String FIELDS_URL = "url";
@@ -55,7 +58,10 @@ public class UniqueVisitorBolt extends RollingBolt {
     dumpCache();
     Map<String, Set<Integer>> urlToVisitors = window.reduceThenAdvanceWindow();
     for (String url : urlToVisitors.keySet()) {
-      collector.emit(new Values(url, urlToVisitors.get(url).size()));
+      int count = urlToVisitors.get(url).size();  
+      log.debug(url + ": " + count);
+      collector.emit(new Values(url, count));
+      // collector.emit(new Values(url, urlToVisitors.get(url).size()));
     }
   }
 
