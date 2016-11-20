@@ -18,10 +18,10 @@
 
 package intel.storm.benchmark.lib.bolt;
 
-import org.apache.storm.Config;
-import org.apache.storm.topology.BasicOutputCollector;
-import org.apache.storm.topology.base.BaseBasicBolt;
-import org.apache.storm.tuple.Tuple;
+import backtype.storm.Config;
+import backtype.storm.topology.BasicOutputCollector;
+import backtype.storm.topology.base.BaseBasicBolt;
+import backtype.storm.tuple.Tuple;
 import intel.storm.benchmark.util.TupleHelpers;
 
 import java.util.HashMap;

@@ -18,8 +18,8 @@
 
 package intel.storm.benchmark.util;
 
-import org.apache.storm.Constants;
-import org.apache.storm.tuple.Tuple;
+import backtype.storm.Constants;
+import backtype.storm.tuple.Tuple;
 
 public final class TupleHelpers {
 
