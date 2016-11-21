@@ -17,11 +17,11 @@
  */
 package intel.storm.benchmark.lib.spout;
 
-import backtype.storm.task.TopologyContext;
-import storm.trident.operation.TridentCollector;
-import storm.trident.spout.IBatchSpout;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Values;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.trident.operation.TridentCollector;
+import org.apache.storm.trident.spout.IBatchSpout;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
 import intel.storm.benchmark.tools.FileReader;
 
 import java.util.ArrayList;
