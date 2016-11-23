@@ -1,22 +1,20 @@
 kafka.brokers:
-    - "localhost"
+    - "kafka1"
 
 zookeeper.servers:
-    - "localhost"
+    - "zkserver1"
 
 kafka.port: 9092
 zookeeper.port: 2181
-redis.host: "localhost"
+redis.host: "redis1"
 kafka.topic: "test-event"
-kafka.partitions: 1
+kafka.partitions: 5
 
-process.cores: 2
-
-storm.workers: 1
-storm.ackers: 1
+storm.workers: 8
+storm.ackers: 8
 
 rollingsort.emit_freq: 60
-rollingsort.chunk_size: 2000000
+rollingsort.chunk_size: 3000000
 rollingcount.window_length: 60
 rollingcount.emit_freq: 10
 sol.topology_level: 3
