@@ -12,6 +12,7 @@ kafka.partitions: 5
 
 storm.workers: 8
 storm.ackers: 8
+max.spout.pending: 1000
 
 rollingsort.emit_freq: 60
 rollingsort.chunk_size: 3000000
