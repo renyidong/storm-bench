@@ -20,13 +20,13 @@ import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.lib.operation.WordSplit;
 import yahoo.benchmark.common.Utils;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 
 import java.util.HashMap;
 import java.util.Map;
 
 
-public class WordCount extends KafkaBenchmark {
+public class WordCount extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(WordCount.class);
 
     public static final String SPOUT_ID = "spout";

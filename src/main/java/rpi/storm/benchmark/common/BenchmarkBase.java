@@ -20,31 +20,31 @@ import java.util.Map;
 import java.util.UUID;
 
 
-abstract public class KafkaBenchmark {
-    private static final Logger log = LoggerFactory.getLogger(KafkaBenchmark.class);
+abstract public class BenchmarkBase {
+    private static final Logger log = LoggerFactory.getLogger(BenchmarkBase.class);
 
     private Config stormConf_;
     protected SpoutConfig spoutConf_;
     protected int parallel_;
 
-    public KafkaBenchmark(Map conf) {
+    public BenchmarkBase(Map conf) {
         String zkServerHosts = Utils.joinHosts((List<String>)conf.get("zookeeper.servers"),
                                                Integer.toString((Integer)conf.get("zookeeper.port")));
-        String kafkaTopic = (String)conf.get("kafka.topic");
+        String topic = getConfString(conf, "kafka.topic");
         spoutConf_ = new SpoutConfig(new ZkHosts(zkServerHosts), 
-                                     kafkaTopic, "/" + kafkaTopic, 
+                                     topic, "/" + topic, 
                                      UUID.randomUUID().toString());
         spoutConf_.scheme = new SchemeAsMultiScheme(new StringScheme());
         spoutConf_.ignoreZkOffsets = true; // Read from the beginning of the topic
 
         stormConf_ = new Config();
-        stormConf_.setNumWorkers(((Number)conf.get("storm.workers")).intValue());
-        stormConf_.setNumAckers(((Number)conf.get("storm.ackers")).intValue());
-        int maxSpoutPending = ((Number)conf.get("max.spout.pending")).intValue();
+        stormConf_.setNumWorkers(getConfInt(conf, "storm.workers"));
+        stormConf_.setNumAckers(getConfInt(conf, "storm.ackers"));
+        int maxSpoutPending = getConfInt(conf,"max.spout.pending");
         if (0 < maxSpoutPending)
-            stormConf_.setMaxSpoutPending(((Number)conf.get("max.spout.pending")).intValue());
+            stormConf_.setMaxSpoutPending(maxSpoutPending);
 
-        parallel_ = ((Number)conf.get("kafka.partitions")).intValue();
+        parallel_ = getConfInt(conf, "kafka.partitions");
     }
 
     abstract public StormTopology getTopology();
@@ -52,5 +52,29 @@ abstract public class KafkaBenchmark {
     public void submitTopology(String name) throws 
         AuthorizationException, AlreadyAliveException, InvalidTopologyException {
         StormSubmitter.submitTopologyWithProgressBar(name, stormConf_, getTopology());
+    }
+
+    public static int getConfInt(Map conf, String field) {
+        Object val = conf.get(field);
+        if (val != null) {
+            log.info(field + ": " + val);
+            return ((Number)val).intValue();
+        } 
+        else {
+            log.info(field + " not found");
+            return -1;
+        }
+    }
+
+    public static String getConfString(Map conf, String field) {
+        Object val = conf.get(field);
+        if (val != null) {
+            log.info(field + ": " + val);
+            return (String)val;
+        } 
+        else {
+            log.info(field + " not found");
+            return null;
+        }
     }
 }

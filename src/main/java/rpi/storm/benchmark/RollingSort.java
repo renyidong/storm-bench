@@ -21,7 +21,7 @@ import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.util.TupleHelpers;
 import yahoo.benchmark.common.Utils;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class RollingSort extends KafkaBenchmark {
+public class RollingSort extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(RollingSort.class);
 
     public static final String SPOUT_ID = "spout";
@@ -40,8 +40,8 @@ public class RollingSort extends KafkaBenchmark {
 
     public RollingSort(Map conf) {
         super(conf);
-        emitFreq_ = ((Number)conf.get("rollingsort.emit_freq")).intValue();
-        chunkSize_ = ((Number)conf.get("rollingsort.chunk_size")).intValue();
+        emitFreq_ = getConfInt(conf, "rollingsort.emit_freq");
+        chunkSize_ = getConfInt(conf, "rollingsort.chunk_size");
     }
 
     @Override

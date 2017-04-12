@@ -22,12 +22,12 @@ import intel.storm.benchmark.lib.bolt.FilterBolt;
 import intel.storm.benchmark.lib.bolt.PageViewBolt;
 import static intel.storm.benchmark.lib.spout.pageview.PageView.Item;
 import yahoo.benchmark.common.Utils;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class DataClean extends KafkaBenchmark {
+public class DataClean extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(DataClean.class);
 
     public static final String SPOUT_ID = "spout";

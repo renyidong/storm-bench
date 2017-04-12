@@ -19,14 +19,14 @@ import org.slf4j.LoggerFactory;
 import storm.kafka.KafkaSpout;
 
 import yahoo.benchmark.common.Utils;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class Grep extends KafkaBenchmark {
+public class Grep extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(Grep.class);
 
     public static final String SPOUT_ID = "spout";
@@ -37,7 +37,7 @@ public class Grep extends KafkaBenchmark {
 
     public Grep(Map conf) {
         super(conf);
-        regex_ = (String)conf.get("grep.pattern_string");        
+        regex_ = getConfString(conf, "grep.pattern_string");
     }
 
     @Override

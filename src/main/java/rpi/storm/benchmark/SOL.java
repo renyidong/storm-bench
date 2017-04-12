@@ -19,14 +19,14 @@ import org.slf4j.LoggerFactory;
 import storm.kafka.KafkaSpout;
 
 import yahoo.benchmark.common.Utils;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 import intel.storm.benchmark.lib.bolt.ConstBolt;
 
 import java.io.Serializable;
 import java.util.Map;
 
 
-public class SOL extends KafkaBenchmark {
+public class SOL extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(SOL.class);
 
     public static final String SPOUT_ID = "spout";

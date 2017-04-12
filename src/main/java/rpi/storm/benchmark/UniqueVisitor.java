@@ -22,12 +22,12 @@ import intel.storm.benchmark.lib.bolt.PageViewBolt;
 import intel.storm.benchmark.lib.bolt.UniqueVisitorBolt;
 import static intel.storm.benchmark.lib.spout.pageview.PageView.Item;
 import yahoo.benchmark.common.Utils;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 
 import java.util.Map;
 
 
-public class UniqueVisitor extends KafkaBenchmark {
+public class UniqueVisitor extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(UniqueVisitor.class);
 
     public static final String SPOUT_ID = "spout";
@@ -39,8 +39,8 @@ public class UniqueVisitor extends KafkaBenchmark {
 
     public UniqueVisitor(Map conf) {
         super(conf);
-        winLen_ = ((Number)conf.get("uniquevisitor.window_length")).intValue();
-        emitFreq_ = ((Number)conf.get("uniquevisitor.emit_freq")).intValue();
+        winLen_ = getConfInt(conf, "uniquevisitor.window_length");
+        emitFreq_ = getConfInt(conf, "uniquevisitor.emit_freq");
     }
 
     @Override

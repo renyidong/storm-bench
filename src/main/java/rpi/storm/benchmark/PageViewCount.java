@@ -15,7 +15,7 @@ import yahoo.benchmark.common.Utils;
 import intel.storm.benchmark.lib.bolt.PageViewBolt;
 import static intel.storm.benchmark.lib.spout.pageview.PageView.Item;
 import rpi.storm.benchmark.WordCount;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.List;
 
 
-public class PageViewCount extends KafkaBenchmark {
+public class PageViewCount extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(PageViewCount.class);
 
     public static final String SPOUT_ID = "spout";

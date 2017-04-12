@@ -15,12 +15,12 @@ import intel.storm.benchmark.lib.bolt.RollingCountBolt;
 import intel.storm.benchmark.lib.bolt.RollingBolt;
 import intel.storm.benchmark.lib.spout.FileReadSpout;
 import yahoo.benchmark.common.Utils;
-import rpi.storm.benchmark.common.KafkaBenchmark;
+import rpi.storm.benchmark.common.BenchmarkBase;
 
 import java.util.Map;
 
 
-public class RollingCount extends KafkaBenchmark {
+public class RollingCount extends BenchmarkBase {
     private static final Logger log = LoggerFactory.getLogger(RollingCount.class);
 
     public static final String SPOUT_ID = "spout";
@@ -32,8 +32,8 @@ public class RollingCount extends KafkaBenchmark {
 
     public RollingCount(Map conf) {
         super(conf);
-        windowLength_ = ((Number)conf.get("rollingcount.window_length")).intValue();
-        emitFreq_ = ((Number)conf.get("rollingcount.emit_freq")).intValue();
+        windowLength_ = getConfInt(conf, "rollingcount.window_length");
+        emitFreq_ = getConfInt(conf, "rollingcount.emit_freq");
     }
 
     @Override

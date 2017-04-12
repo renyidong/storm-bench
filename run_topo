@@ -15,50 +15,59 @@ case "$1" in
         echo "Submitting rollingsort"
         class=RollingSort
         topo=rollingsort
+        topic=rand
         ;;
     sol)
         echo "Submitting sol"
         class=SOL
         topo=sol
+        topic=bytes
         ;;
     wc)
         echo "Submitting wordcount"
         class=WordCount
         topo=wordcount
+        topic=book
         ;;
     clean)
         echo "Submitting dataclean"
         class=DataClean
         topo=dataclean
+        topic=view
         ;;
     grep)
         echo "Submitting grep"
         class=Grep
         topo=grep
+        topic=book
         ;;
     pv)
         echo "Submitting pageviewcount"        
         class=PageViewCount
         topo=pageviewcount
+        topic=view
         ;;
     visitor)
         echo "Submitting uniquevisitor"
         class=UniqueVisitor
-        topo=uniquevisitorp
+        topo=uniquevisitor
+        topic=view
         ;;
     trident)
         echo "Submitting trident"
         class=TridentWordCount
         topo=tridentwordcount
+        topic=book
         ;;
     rcount)
         echo "Submitting rollingcount"
         class=RollingCount
         topo=rollingcount
+        topic=book
         ;;
     *)
         echo "Usage: $0 {rsort|sol|wc|clean|grep|pv|visitor|trident|rcount}"
         exit 1
 esac
 
-run_cmd "storm jar ${JAR} ${PACKAGE}.${class} ${topo} -conf ${CONF}"
+run_cmd "storm jar ${JAR} ${PACKAGE}.${class} ${topo} -conf ${CONF} -topic ${topic}"
