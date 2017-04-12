@@ -40,7 +40,9 @@ abstract public class KafkaBenchmark {
         stormConf_ = new Config();
         stormConf_.setNumWorkers(((Number)conf.get("storm.workers")).intValue());
         stormConf_.setNumAckers(((Number)conf.get("storm.ackers")).intValue());
-        stormConf_.setMaxSpoutPending(((Number)conf.get("max.spout.pending")).intValue());
+        int maxSpoutPending = ((Number)conf.get("max.spout.pending")).intValue();
+        if (0 < maxSpoutPending)
+            stormConf_.setMaxSpoutPending(((Number)conf.get("max.spout.pending")).intValue());
 
         parallel_ = ((Number)conf.get("kafka.partitions")).intValue();
     }
