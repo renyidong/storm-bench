@@ -3,13 +3,9 @@ package rpi.storm.benchmark;
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.lib.bolt.RollingCountBolt;
 import intel.storm.benchmark.lib.bolt.RollingBolt;
@@ -30,17 +26,16 @@ public class RollingCount extends BenchmarkBase {
     private int windowLength_;
     private int emitFreq_;
 
-    public RollingCount(Map conf) {
-        super(conf);
-        windowLength_ = getConfInt(conf, "rollingcount.window_length");
-        emitFreq_ = getConfInt(conf, "rollingcount.emit_freq");
+    public RollingCount(String[] args) throws ParseException {
+        super(args);
+        windowLength_ = getConfInt(globalConf_, "rollingcount.window_length");
+        emitFreq_ = getConfInt(globalConf_, "rollingcount.emit_freq");
     }
 
     @Override
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
-        KafkaSpout kafkaSpout = new KafkaSpout(spoutConf_);
-        builder.setSpout(SPOUT_ID, kafkaSpout, parallel_);
+        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
         builder.setBolt(SPLIT_ID, new WordCount.SplitSentence(), parallel_)
             .localOrShuffleGrouping(SPOUT_ID);
         builder.setBolt(COUNT_ID, new RollingCountBolt(windowLength_, emitFreq_), parallel_)
@@ -50,23 +45,7 @@ public class RollingCount extends BenchmarkBase {
     }
 
     public static void main(String[] args) throws Exception {
-        Options opts = new Options();
-        opts.addOption("conf", true, "Path to the config file.");
-        opts.addOption("topic", true, "Kafka topic to consume.");
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(opts, args);
-        String configPath = cmd.getOptionValue("conf");
-        if (configPath == null) {
-            log.error("Null config path");
-            System.exit(1);
-        }
-        Map conf = Utils.findAndReadConfigFile(configPath, true);
-        // if specified, overwrite "kafka.topic" in the conf file
-        String topic = cmd.getOptionValue("topic");
-        if (topic != null)
-            conf.put("kafka.topic", topic);
-
-        RollingCount app = new RollingCount(conf);
+        RollingCount app = new RollingCount(args);
         app.submitTopology(args[0]);
     }
 }

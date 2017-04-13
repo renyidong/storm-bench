@@ -10,13 +10,9 @@ import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.lib.operation.WordSplit;
 import yahoo.benchmark.common.Utils;
@@ -33,15 +29,14 @@ public class WordCount extends BenchmarkBase {
     public static final String SPLIT_ID = "split";
     public static final String COUNT_ID = "count";
 
-    public WordCount(Map conf) {
-        super(conf);
+    public WordCount(String[] args) throws ParseException {
+        super(args);
     }
     
     @Override
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
-        KafkaSpout kafkaSpout = new KafkaSpout(spoutConf_);
-        builder.setSpout(SPOUT_ID, kafkaSpout, parallel_);
+        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
         builder.setBolt(SPLIT_ID, new SplitSentence(), parallel_)
             .localOrShuffleGrouping(SPOUT_ID);
         builder.setBolt(COUNT_ID, new Count(), parallel_)
@@ -51,23 +46,7 @@ public class WordCount extends BenchmarkBase {
     }
 
     public static void main(String[] args) throws Exception {
-        Options opts = new Options();
-        opts.addOption("conf", true, "Path to the config file.");
-        opts.addOption("topic", true, "Kafka topic to consume.");
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(opts, args);
-        String configPath = cmd.getOptionValue("conf");
-        if (configPath == null) {
-            log.error("Null config path");
-            System.exit(1);
-        }
-        Map conf = Utils.findAndReadConfigFile(configPath, true);
-        // if specified, overwrite "kafka.topic" in the conf file
-        String topic = cmd.getOptionValue("topic");
-        if (topic != null)
-            conf.put("kafka.topic", topic);
-
-        WordCount app = new WordCount(conf);
+        WordCount app = new WordCount(args);
         app.submitTopology(args[0]);
     }
 

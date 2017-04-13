@@ -10,13 +10,9 @@ import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.lib.bolt.PageViewBolt;
 import intel.storm.benchmark.lib.bolt.UniqueVisitorBolt;
@@ -37,17 +33,16 @@ public class UniqueVisitor extends BenchmarkBase {
     private int winLen_;
     private int emitFreq_;
 
-    public UniqueVisitor(Map conf) {
-        super(conf);
-        winLen_ = getConfInt(conf, "uniquevisitor.window_length");
-        emitFreq_ = getConfInt(conf, "uniquevisitor.emit_freq");
+    public UniqueVisitor(String[] args) throws ParseException {
+        super(args);
+        winLen_ = getConfInt(globalConf_, "uniquevisitor.window_length");
+        emitFreq_ = getConfInt(globalConf_, "uniquevisitor.emit_freq");
     }
 
     @Override
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
-        KafkaSpout kafkaSpout = new KafkaSpout(spoutConf_);
-        builder.setSpout(SPOUT_ID, kafkaSpout, parallel_);
+        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
         builder.setBolt(VIEW_ID, new PageViewBolt(Item.URL, Item.USER), parallel_)
             .localOrShuffleGrouping(SPOUT_ID);
         builder.setBolt(UNIQUER_ID, new UniqueVisitorBolt(winLen_, emitFreq_), parallel_)
@@ -57,23 +52,7 @@ public class UniqueVisitor extends BenchmarkBase {
     }
 
     public static void main(String[] args) throws Exception {
-        Options opts = new Options();
-        opts.addOption("conf", true, "Path to the config file.");
-        opts.addOption("topic", true, "Kafka topic to consume.");
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(opts, args);
-        String configPath = cmd.getOptionValue("conf");
-        if (configPath == null) {
-            log.error("Null config path");
-            System.exit(1);
-        }
-        Map conf = Utils.findAndReadConfigFile(configPath, true);
-        // if specified, overwrite "kafka.topic" in the conf file
-        String topic = cmd.getOptionValue("topic");
-        if (topic != null)
-            conf.put("kafka.topic", topic);
-
-        UniqueVisitor app = new UniqueVisitor(conf);
+        UniqueVisitor app = new UniqueVisitor(args);
         app.submitTopology(args[0]);
     }
 }

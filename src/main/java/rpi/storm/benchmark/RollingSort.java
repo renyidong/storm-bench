@@ -11,13 +11,9 @@ import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.util.TupleHelpers;
 import yahoo.benchmark.common.Utils;
@@ -38,17 +34,16 @@ public class RollingSort extends BenchmarkBase {
     private int emitFreq_;
     private int chunkSize_;
 
-    public RollingSort(Map conf) {
-        super(conf);
-        emitFreq_ = getConfInt(conf, "rollingsort.emit_freq");
-        chunkSize_ = getConfInt(conf, "rollingsort.chunk_size");
+    public RollingSort(String[] args) throws ParseException {
+        super(args);
+        emitFreq_ = getConfInt(globalConf_, "rollingsort.emit_freq");
+        chunkSize_ = getConfInt(globalConf_, "rollingsort.chunk_size");
     }
 
     @Override
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
-        KafkaSpout kafkaSpout = new KafkaSpout(spoutConf_);
-        builder.setSpout(SPOUT_ID, kafkaSpout, parallel_);
+        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
         builder.setBolt(SORT_BOLT_ID, new SortBolt(emitFreq_, chunkSize_), parallel_)
             .localOrShuffleGrouping(SPOUT_ID);
 
@@ -56,23 +51,7 @@ public class RollingSort extends BenchmarkBase {
     }
 
     public static void main(String[] args) throws Exception {
-        Options opts = new Options();
-        opts.addOption("conf", true, "Path to the config file.");
-        opts.addOption("topic", true, "Kafka topic to consume.");
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(opts, args);
-        String configPath = cmd.getOptionValue("conf");
-        if (configPath == null) {
-            log.error("Null config path");
-            System.exit(1);
-        }
-        Map conf = Utils.findAndReadConfigFile(configPath, true);
-        // if specified, overwrite "kafka.topic" in the conf file
-        String topic = cmd.getOptionValue("topic");
-        if (topic != null)
-            conf.put("kafka.topic", topic);
-
-        RollingSort app = new RollingSort(conf);
+        RollingSort app = new RollingSort(args);
         app.submitTopology(args[0]);
     }
 
