@@ -68,17 +68,17 @@ abstract public class BenchmarkBase {
 
         // parallel
         String parallel = cmd.getOptionValue("parallel");
-        if (parallel != null) globalConf_.put("kafka.partitions", parallel);
+        if (parallel != null) globalConf_.put("kafka.partitions", Integer.parseInt(parallel));
         parallel_ = getConfInt(globalConf_, "kafka.partitions");
 
         // workers
         String workers = cmd.getOptionValue("workers");
-        if (workers != null) globalConf_.put("storm.workers", workers);
+        if (workers != null) globalConf_.put("storm.workers", Integer.parseInt(workers));
         stormConf_.setNumWorkers(getConfInt(globalConf_, "storm.workers"));
 
         // ackers
         String ackers = cmd.getOptionValue("ackers");
-        if (ackers != null) globalConf_.put("storm.ackers", ackers);
+        if (ackers != null) globalConf_.put("storm.ackers", Integer.parseInt(ackers));
         stormConf_.setNumAckers(getConfInt(globalConf_, "storm.ackers"));
 
         // maxSpoutPendng

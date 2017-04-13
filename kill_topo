@@ -8,44 +8,37 @@ run_cmd() {
 
 case "$1" in
     rsort)
-        echo "Killing rollingsort"
         topo=rollingsort
         ;;
     sol)
-        echo "Killing sol"
         topo=sol
         ;;
     wc)
-        echo "Killing wordcount"
         topo=wordcount
         ;;
     clean)
-        echo "Killing dataclean"
         topo=dataclean
         ;;
     grep)
-        echo "Killing grep"
         topo=grep
         ;;
     pv)
-        echo "Killing pageviewcount"        
         topo=pageviewcount
         ;;
     visitor)
-        echo "Killing uniquevisitor"
         topo=uniquevisitorp
         ;;
     trident)
-        echo "Killing trident"
         topo=tridentwordcount
         ;;
     rcount)
-        echo "Killing rollingcount"
         topo=rollingcount
         ;;
     *)
-        echo "Usage: $0 {rsort|sol|wc|clean|grep|pv|visitor|trident|rcount}"
-        exit 1
+        topo=`cat ./topo`
+        ;;
 esac
+
+echo "Killing ${topo}"
 
 run_cmd "storm kill -w 0 ${topo} || true"
