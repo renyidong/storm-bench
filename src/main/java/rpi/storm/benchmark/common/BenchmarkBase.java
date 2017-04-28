@@ -12,7 +12,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import storm.kafka.KafkaSpout;
 import storm.kafka.SpoutConfig;
 import storm.kafka.StringScheme;
 import storm.kafka.ZkHosts;
@@ -31,7 +30,7 @@ abstract public class BenchmarkBase {
 
     private Config stormConf_;
     protected Map globalConf_;
-    protected KafkaSpout kafkaSpout_;
+    protected SpoutConfig spoutConf_;
     protected int parallel_;
 
     public BenchmarkBase(String args[]) throws ParseException {
@@ -59,12 +58,11 @@ abstract public class BenchmarkBase {
         String zkServerHosts = Utils.joinHosts(
             (List<String>)globalConf_.get("zookeeper.servers"),
             Integer.toString((Integer)globalConf_.get("zookeeper.port")));
-        SpoutConfig spoutConf = new SpoutConfig(new ZkHosts(zkServerHosts), 
-                                                topic, "/" + topic, 
-                                                UUID.randomUUID().toString());
-        spoutConf.scheme = new SchemeAsMultiScheme(new StringScheme());
-        spoutConf.ignoreZkOffsets = true; // Read from the beginning of the topic
-        kafkaSpout_ = new KafkaSpout(spoutConf);
+        spoutConf_ = new SpoutConfig(new ZkHosts(zkServerHosts), 
+                                     topic, "/" + topic, 
+                                     UUID.randomUUID().toString());
+        spoutConf_.scheme = new SchemeAsMultiScheme(new StringScheme());
+        spoutConf_.ignoreZkOffsets = true; // Read from the beginning of the topic
 
         // parallel
         String parallel = cmd.getOptionValue("parallel");

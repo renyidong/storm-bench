@@ -13,6 +13,7 @@ import backtype.storm.tuple.Values;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.lib.bolt.FilterBolt;
 import intel.storm.benchmark.lib.bolt.PageViewBolt;
@@ -37,7 +38,7 @@ public class DataClean extends BenchmarkBase {
     @Override
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
+        builder.setSpout(SPOUT_ID, new KafkaSpout(spoutConf_), parallel_);
         builder.setBolt(VIEW_ID, new PageViewBolt(Item.STATUS, Item.ALL), parallel_)
             .localOrShuffleGrouping(SPOUT_ID);
         builder.setBolt(FILTER_ID, new FilterBolt<Integer>(200), parallel_)

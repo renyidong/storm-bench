@@ -14,6 +14,7 @@ import backtype.storm.tuple.Values;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.util.TupleHelpers;
 import yahoo.benchmark.common.Utils;
@@ -43,7 +44,7 @@ public class RollingSort extends BenchmarkBase {
     @Override
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
+        builder.setSpout(SPOUT_ID, new KafkaSpout(spoutConf_), parallel_);
         builder.setBolt(SORT_BOLT_ID, new SortBolt(emitFreq_, chunkSize_), parallel_)
             .localOrShuffleGrouping(SPOUT_ID);
 

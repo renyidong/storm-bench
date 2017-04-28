@@ -13,6 +13,7 @@ import backtype.storm.tuple.Values;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import storm.kafka.KafkaSpout;
 
 import yahoo.benchmark.common.Utils;
 import rpi.storm.benchmark.common.BenchmarkBase;
@@ -39,7 +40,7 @@ public class SOL extends BenchmarkBase {
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
         // numLevel: total number of layers including one spout and bolts
-        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
+        builder.setSpout(SPOUT_ID, new KafkaSpout(spoutConf_), parallel_);
         builder.setBolt(BOLT_ID + 1, new ConstBolt(), parallel_)
             .shuffleGrouping(SPOUT_ID);
         for (int levelNum = 2; levelNum <= numLevels_ - 1; levelNum++) {

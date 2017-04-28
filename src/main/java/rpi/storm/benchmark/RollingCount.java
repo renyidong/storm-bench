@@ -6,6 +6,7 @@ import backtype.storm.tuple.Fields;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import storm.kafka.KafkaSpout;
 
 import intel.storm.benchmark.lib.bolt.RollingCountBolt;
 import intel.storm.benchmark.lib.bolt.RollingBolt;
@@ -35,7 +36,7 @@ public class RollingCount extends BenchmarkBase {
     @Override
     public StormTopology getTopology() {
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout(SPOUT_ID, kafkaSpout_, parallel_);
+        builder.setSpout(SPOUT_ID, new KafkaSpout(spoutConf_), parallel_);
         builder.setBolt(SPLIT_ID, new WordCount.SplitSentence(), parallel_)
             .localOrShuffleGrouping(SPOUT_ID);
         builder.setBolt(COUNT_ID, new RollingCountBolt(windowLength_, emitFreq_), parallel_)
